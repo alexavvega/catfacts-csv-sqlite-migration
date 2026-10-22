@@ -1,10 +1,3 @@
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonParseException;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -12,8 +5,20 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 
 /**
  * Cat Facts API, backed by a CSV file.
@@ -62,13 +67,12 @@ public class App {
             .create();
 
     public static void main(String[] args) throws IOException {
-        loadFromCsv();
-        System.out.println("Loaded " + facts.size() + " facts from " + CSV_FILE);
+        System.out.println("Using SQLite database: " + DB_URL);
 
-        HttpServer server = HttpServer.create(new InetSocketAddress(PORT), 0);
-        server.createContext("/facts", new FactsHandler());
-        server.start();
-        System.out.println("Cat Facts API running on http://localhost:" + PORT + "/facts");
+    HttpServer server = HttpServer.create(new InetSocketAddress(PORT), 0);
+    server.createContext("/facts", new FactsHandler());
+    server.start();
+    System.out.println("Cat Facts API running on http://localhost:" + PORT + "/facts");
     }
 
     static class FactsHandler implements HttpHandler {
@@ -85,7 +89,7 @@ public class App {
         }
 
         /** Decides which endpoint a request is for. */
-        void route(HttpExchange exchange) throws IOException {
+        void route(HttpExchange exchange) throws IOException, SQLException {
             String method = exchange.getRequestMethod();
             String path = exchange.getRequestURI().getPath();
 
@@ -122,9 +126,27 @@ public class App {
         }
 
         /** GET /facts */
-        void getAllFacts(HttpExchange exchange) throws IOException {
-            sendJson(exchange, 200, facts);
-        }
+        void getAllFacts(HttpExchange exchange) throws IOException, SQLException {
+            String sql = "SELECT id, fact FROM facts ORDER BY id";
+            List<CatFact> results = new ArrayList<>();
+
+            try (Connection conn = DriverManager.getConnection(DB_URL)) {
+                try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                    try (ResultSet rs = pstmt.executeQuery()) {
+                        while (rs.next()) {
+                            int id = rs.getInt("id");
+                            String fact = rs.getString("fact");
+                            
+                            results.add(new CatFact(id, fact));
+                }
+                    }
+                }
+            }
+        sendJson(exchange, 200, results);
+    }
+
+
+
 
         /** GET /facts/{id} */
         void getFactById(HttpExchange exchange, int id) throws IOException {
