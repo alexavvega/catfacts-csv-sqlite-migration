@@ -1,3 +1,4 @@
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -11,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -45,6 +47,7 @@ public class App {
             if (line.isBlank()) {
                 continue;
             }
+
             // Limit of 2: split at the FIRST comma only, so commas in the fact survive.
             String[] parts = line.split(",", 2);
             int id = Integer.parseInt(parts[0].trim());
@@ -64,10 +67,11 @@ public class App {
     public static void main(String[] args) throws IOException {
         System.out.println("Using SQLite database: " + DB_URL);
 
-    HttpServer server = HttpServer.create(new InetSocketAddress(PORT), 0);
-    server.createContext("/facts", new FactsHandler());
-    server.start();
-    System.out.println("Cat Facts API running on http://localhost:" + PORT + "/facts");
+        HttpServer server = HttpServer.create(new InetSocketAddress(PORT), 0);
+        server.createContext("/facts", new FactsHandler());
+        server.start();
+
+        System.out.println("Cat Facts API running on http://localhost:" + PORT + "/facts");
     }
 
     static class FactsHandler implements HttpHandler {
@@ -93,7 +97,7 @@ public class App {
                 switch (method) {
                     case "GET" -> sendJson(exchange, 200, getAllFacts(DB_URL));
                     case "POST" -> createFact(exchange);
-                    default     -> sendJson(exchange, 405, new ErrorBody("method not allowed"));
+                    default -> sendJson(exchange, 405, new ErrorBody("method not allowed"));
                 }
                 return;
             }
@@ -107,14 +111,22 @@ public class App {
             // "/facts/{id}"  ->  returns one fact with the provided id
             String idText = path.substring("/facts/".length());
             int id;
+
             try {
                 id = Integer.parseInt(idText);
             } catch (NumberFormatException e) {
                 sendJson(exchange, 400, new ErrorBody("id must be a whole number"));
                 return;
             }
+
             if (method.equals("GET")) {
-                getFactById(exchange, id);
+                Optional<CatFact> found = findFactById(DB_URL, id);
+
+                if (found.isPresent()) {
+                    sendJson(exchange, 200, found.get());
+                } else {
+                    sendJson(exchange, 404, new ErrorBody("no fact with id " + id));
+                }
             } else {
                 sendJson(exchange, 405, new ErrorBody("method not allowed"));
             }
@@ -140,34 +152,29 @@ public class App {
             return results;
         }
 
-
-
-
         /** GET /facts/{id} */
-/** GET /facts/{id} */
-        void getFactById(HttpExchange exchange, int id) throws IOException, SQLException {
-        String sql = "SELECT id, fact FROM facts WHERE id = ?";
+        Optional<CatFact> findFactById(String dbUrl, int id) throws SQLException {
+            String sql = "SELECT id, fact FROM facts WHERE id = ?";
 
-        try (Connection conn = DriverManager.getConnection(DB_URL)) {
-            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            try (Connection conn = DriverManager.getConnection(dbUrl)) {
+                try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-                pstmt.setInt(1, id);
+                    pstmt.setInt(1, id);
 
-                try (ResultSet rs = pstmt.executeQuery()) {
-                    if (rs.next()) {
-                        int factId = rs.getInt("id");
-                        String factText = rs.getString("fact");
+                    try (ResultSet rs = pstmt.executeQuery()) {
+                        if (rs.next()) {
+                            int factId = rs.getInt("id");
+                            String factText = rs.getString("fact");
 
-                        CatFact fact = new CatFact(factId, factText);
-                        sendJson(exchange, 200, fact);
-                        return;
+                            CatFact fact = new CatFact(factId, factText);
+                            return Optional.of(fact);
+                        }
                     }
                 }
             }
-        }
 
-    sendJson(exchange, 404, new ErrorBody("no fact with id " + id));
-}
+            return Optional.empty();
+        }
 
         /** POST /facts */
         void createFact(HttpExchange exchange) throws IOException, SQLException {
@@ -180,30 +187,31 @@ public class App {
                 sendJson(exchange, 400, new ErrorBody("body must be JSON like {\"fact\": \"...\"}"));
                 return;
             }
+
             if (input == null || input.fact() == null || input.fact().isBlank()) {
                 sendJson(exchange, 400, new ErrorBody("\"fact\" is required and cannot be blank"));
                 return;
             }
+
             String text = input.fact().trim();
-            
 
             String sql = "INSERT INTO facts (fact) VALUES (?) RETURNING id";
             int newId;
 
-                try (Connection conn = DriverManager.getConnection(DB_URL)) {
-                    try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                        pstmt.setString(1, text);
+            try (Connection conn = DriverManager.getConnection(dbUrl)) {
+                try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                    pstmt.setString(1, text);
 
-                        try (ResultSet rs = pstmt.executeQuery()) {
-                            if (!rs.next()) {
-                                throw new SQLException("No ID returned");
-                            }
-                            newId = rs.getInt("id");
+                    try (ResultSet rs = pstmt.executeQuery()) {
+                        if (!rs.next()) {
+                            throw new SQLException("No ID returned");
                         }
+                        newId = rs.getInt("id");
                     }
                 }
-                
-                CatFact created = new CatFact(newId, text);
+            }
+
+            CatFact created = new CatFact(newId, text);
 
             exchange.getResponseHeaders().set("Location", "/facts/" + created.id());
             sendJson(exchange, 201, created);
@@ -216,6 +224,7 @@ public class App {
             byte[] bytes = gson.toJson(body).getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
             exchange.sendResponseHeaders(status, bytes.length);
+
             try (OutputStream out = exchange.getResponseBody()) {
                 out.write(bytes);
             }
