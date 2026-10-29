@@ -91,7 +91,7 @@ public class App {
             // "/facts" or "/facts/"  ->  returns the whole collection
             if (path.equals("/facts") || path.equals("/facts/")) {
                 switch (method) {
-                    case "GET"  -> getAllFacts(exchange);
+                    case "GET" -> sendJson(exchange, 200, getAllFacts(DB_URL));
                     case "POST" -> createFact(exchange);
                     default     -> sendJson(exchange, 405, new ErrorBody("method not allowed"));
                 }
@@ -121,24 +121,24 @@ public class App {
         }
 
         /** GET /facts */
-        void getAllFacts(HttpExchange exchange) throws IOException, SQLException {
+        List<CatFact> getAllFacts(String dbUrl) throws SQLException {
             String sql = "SELECT id, fact FROM facts ORDER BY id";
             List<CatFact> results = new ArrayList<>();
 
-            try (Connection conn = DriverManager.getConnection(DB_URL)) {
+            try (Connection conn = DriverManager.getConnection(dbUrl)) {
                 try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                     try (ResultSet rs = pstmt.executeQuery()) {
                         while (rs.next()) {
                             int id = rs.getInt("id");
                             String fact = rs.getString("fact");
-                            
                             results.add(new CatFact(id, fact));
-                }
+                        }
                     }
                 }
             }
-        sendJson(exchange, 200, results);
-    }
+
+            return results;
+        }
 
 
 
