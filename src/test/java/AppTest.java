@@ -1,5 +1,9 @@
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,11 +13,14 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 
 // Calling loadFromCsv() twice adds duplicate facts and we have 20 facts
 // because the list was not cleared. I would change the code to clear the list before loading the CSV again.
 class AppTest {
+    @TempDir
+    Path tempDir;
 
     @Test
     void returnsCatFactValues() {
@@ -170,4 +177,33 @@ class AppTest {
         assertEquals(10, App.facts.size());
     }
 
+
+    @Test
+    void getAllFactsInOrder() throws Exception {
+        
+        Path db = tempDir.resolve("test.db");
+        String url = "jdbc:sqlite:" + db;
+        
+        try (Connection c = DriverManager.getConnection(url)) {
+            Statement s = c.createStatement();
+            
+            s.executeUpdate("CREATE TABLE facts (id INTEGER PRIMARY KEY AUTOINCREMENT, fact TEXT NOT NULL)");
+            
+            String[] facts = {"Cats purr", "Cats, oddly, cannot taste sweetness"};
+            
+            for (int i = 0; i < facts.length; i++) {
+                String sql = "INSERT INTO facts (id, fact) VALUES (" + (i + 1) + ", '" + facts[i] + "')";
+                s.executeUpdate(sql);
+            }
+            s.close();
+        }
+        
+        App.FactsHandler handler = new App.FactsHandler();
+        List<App.CatFact> results = handler.getAllFacts(url);
+        
+        assertEquals(2, results.size());
+        assertEquals(1, results.get(0).id());
+        assertEquals("Cats, oddly, cannot taste sweetness", results.get(1).fact());
+    }
+    
 }
