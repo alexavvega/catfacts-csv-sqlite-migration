@@ -130,18 +130,18 @@ class AppTest {
     @Test
     void readEveryRow() throws IOException {
 
-        App.facts.clear();
-        App.loadFromCsv();
+        MigrateCsvToDb.facts.clear();
+        MigrateCsvToDb.loadFromCsv();
 
-        assertEquals(10, App.facts.size());
+        assertEquals(10, MigrateCsvToDb.facts.size());
     }
 
     @Test
     void commaStoredWhole() throws IOException {
 
-        App.loadFromCsv();
+        MigrateCsvToDb.loadFromCsv();
 
-        for (CatFact fact : App.facts) {
+        for (CatFact fact : MigrateCsvToDb.facts) {
             if (fact.id() == 9) {
                 assertEquals("Cats, like people, tend to favor one paw over the other", fact.fact());
                 return;
@@ -154,17 +154,17 @@ class AppTest {
     @Test
     void idsComesFromFile() throws IOException {
 
-        App.loadFromCsv();
+        MigrateCsvToDb.loadFromCsv();
 
-        assertEquals(1, App.facts.get(0).id());
+        assertEquals(1, MigrateCsvToDb.facts.get(0).id());
     }
 
     @Test
     void highestID() throws IOException {
 
-        App.loadFromCsv();
+        MigrateCsvToDb.loadFromCsv();
 
-        assertEquals(11, App.nextId);
+        assertEquals(11, MigrateCsvToDb.nextId);
     }
 
     // What I found was that loading the CSV twice duplicates the factst and
@@ -172,11 +172,11 @@ class AppTest {
     @Test
     void notmultipleFacts() throws IOException {
 
-        App.facts.clear();
-        App.loadFromCsv();
-        App.loadFromCsv();
+        MigrateCsvToDb.facts.clear();
+        MigrateCsvToDb.loadFromCsv();
+        MigrateCsvToDb.loadFromCsv();
 
-        assertEquals(10, App.facts.size());
+        assertEquals(10, MigrateCsvToDb.facts.size());
     }
 
     @Test
