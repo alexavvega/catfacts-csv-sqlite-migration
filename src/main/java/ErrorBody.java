@@ -1,0 +1,1 @@
+record ErrorBody(String error) {}

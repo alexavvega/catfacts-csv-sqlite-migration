@@ -28,7 +28,7 @@ class AppTest {
     void returnsCatFactValues() {
 
         // Initialize what you need
-        App.CatFact cat = new App.CatFact(5, "Cats have super hearing");
+        CatFact cat = new CatFact(5, "Cats have super hearing");
 
         // Assert for what needs to be tested
         assertEquals(5, cat.id());
@@ -38,8 +38,8 @@ class AppTest {
     @Test
     void catFactsSameValues() {
 
-        App.CatFact cat1 = new App.CatFact(5, "Cats have super hearing");
-        App.CatFact cat2 = new App.CatFact(5, "Cats have super hearing");
+        CatFact cat1 = new CatFact(5, "Cats have super hearing");
+        CatFact cat2 = new CatFact(5, "Cats have super hearing");
 
         assertEquals(cat1, cat2);
     }
@@ -47,8 +47,8 @@ class AppTest {
     @Test
     void catFactsNotEqual() {
 
-        App.CatFact cat1 = new App.CatFact(5, "Cats have super hearing");
-        App.CatFact cat2 = new App.CatFact(5, "Cats have night vision");
+        CatFact cat1 = new CatFact(5, "Cats have super hearing");
+        CatFact cat2 = new CatFact(5, "Cats have night vision");
 
         assertNotEquals(cat1, cat2);
     }
@@ -56,16 +56,16 @@ class AppTest {
     @Test
     void catFactByValues() {
 
-        List<App.CatFact> cats = new ArrayList<>();
-        cats.add(new App.CatFact(1, "Cats have super hearing"));
+        List<CatFact> cats = new ArrayList<>();
+        cats.add(new CatFact(1, "Cats have super hearing"));
 
-        assertTrue(cats.contains(new App.CatFact(1, "Cats have super hearing")));
+        assertTrue(cats.contains(new CatFact(1, "Cats have super hearing")));
     }
 
     @Test
     void returnNewFacts() {
 
-        App.NewFact cat = new App.NewFact("Cats are heavy sleepers");
+        NewFact cat = new NewFact("Cats are heavy sleepers");
 
         assertEquals("Cats are heavy sleepers", cat.fact());
     }
@@ -73,7 +73,7 @@ class AppTest {
     @Test
     void errorBodyMessage() {
 
-        App.ErrorBody error = new App.ErrorBody("Fact not found");
+        ErrorBody error = new ErrorBody("Fact not found");
 
         assertEquals("Fact not found", error.error());
     }
@@ -82,7 +82,7 @@ class AppTest {
     @Test
     void catFactHoldingEmptyText() {
 
-        App.CatFact cat = new App.CatFact(5, "");
+        CatFact cat = new CatFact(5, "");
 
         assertEquals("", cat.fact());
     }
@@ -91,7 +91,7 @@ class AppTest {
     @Test
     void produceCatFactJson() {
 
-        App.CatFact cat = new App.CatFact(5, "Cats have super hearing");
+        CatFact cat = new CatFact(5, "Cats have super hearing");
         String json = App.gson.toJson(cat);
 
         assertTrue(json.contains("\"id\": 5"));
@@ -102,7 +102,7 @@ class AppTest {
     void jsonDeserializes() {
 
         String json = "{\"fact\": \"Cats have super hearing\"}";
-        App.NewFact cat = App.gson.fromJson(json, App.NewFact.class);
+        NewFact cat = App.gson.fromJson(json, NewFact.class);
 
         assertEquals("Cats have super hearing", cat.fact());
     }
@@ -110,7 +110,7 @@ class AppTest {
     @Test
     void gsonApostrophe() {
 
-        App.CatFact cat = new App.CatFact(5, "Cats don't like water");
+        CatFact cat = new CatFact(5, "Cats don't like water");
         String json = App.gson.toJson(cat);
 
         assertTrue(json.contains("don't"));
@@ -120,9 +120,9 @@ class AppTest {
     @Test
     void factCommasSurvive() {
 
-        App.CatFact cat = new App.CatFact(9, "Cats, unlike dogs, cannot taste sweetness");
+        CatFact cat = new CatFact(9, "Cats, unlike dogs, cannot taste sweetness");
         String json = App.gson.toJson(cat);
-        App.CatFact result = App.gson.fromJson(json, App.CatFact.class);
+        CatFact result = App.gson.fromJson(json, CatFact.class);
 
         assertEquals(cat, result);
     }
@@ -141,7 +141,7 @@ class AppTest {
 
         App.loadFromCsv();
 
-        for (App.CatFact fact : App.facts) {
+        for (CatFact fact : App.facts) {
             if (fact.id() == 9) {
                 assertEquals("Cats, like people, tend to favor one paw over the other", fact.fact());
                 return;
@@ -200,7 +200,7 @@ class AppTest {
         }
 
         App.FactsHandler handler = new App.FactsHandler();
-        List<App.CatFact> results = handler.getAllFacts(url);
+        List<CatFact> results = handler.getAllFacts(url);
 
         assertEquals(2, results.size());
         assertEquals(1, results.get(0).id());
@@ -221,7 +221,7 @@ class AppTest {
         }
 
         App.FactsHandler handler = new App.FactsHandler();
-        Optional<App.CatFact> found = handler.findFactById(url, 2);
+        Optional<CatFact> found = handler.findFactById(url, 2);
 
         assertTrue(found.isPresent());
         assertEquals(2, found.get().id());
@@ -246,7 +246,7 @@ class AppTest {
         }
 
         App.FactsHandler handler = new App.FactsHandler();
-        Optional<App.CatFact> found = handler.findFactById(url, 99);
+        Optional<CatFact> found = handler.findFactById(url, 99);
 
         assertTrue(found.isEmpty());
     }

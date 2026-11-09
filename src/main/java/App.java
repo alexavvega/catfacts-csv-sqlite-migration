@@ -34,10 +34,6 @@ public class App {
     static final Path CSV_FILE = Path.of("facts.csv");
     static final String DB_URL = "jdbc:sqlite:catfacts.db";
 
-    record CatFact(int id, String fact) {}
-    record NewFact(String fact) {}
-    record ErrorBody(String error) {}
-
     static final List<CatFact> facts = new ArrayList<>();
     static int nextId = 1;
 
@@ -137,7 +133,7 @@ public class App {
             String sql = "SELECT id, fact FROM facts ORDER BY id";
             List<CatFact> results = new ArrayList<>();
 
-            try (Connection conn = DriverManager.getConnection(dbUrl)) {
+            try (Connection conn = DriverManager.getConnection(DB_URL)) {
                 try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                     try (ResultSet rs = pstmt.executeQuery()) {
                         while (rs.next()) {
@@ -156,7 +152,7 @@ public class App {
         Optional<CatFact> findFactById(String dbUrl, int id) throws SQLException {
             String sql = "SELECT id, fact FROM facts WHERE id = ?";
 
-            try (Connection conn = DriverManager.getConnection(dbUrl)) {
+            try (Connection conn = DriverManager.getConnection(DB_URL)) {
                 try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
                     pstmt.setInt(1, id);
@@ -198,7 +194,7 @@ public class App {
             String sql = "INSERT INTO facts (fact) VALUES (?) RETURNING id";
             int newId;
 
-            try (Connection conn = DriverManager.getConnection(dbUrl)) {
+            try (Connection conn = DriverManager.getConnection(DB_URL)) {
                 try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                     pstmt.setString(1, text);
 
