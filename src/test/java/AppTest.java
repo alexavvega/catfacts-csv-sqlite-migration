@@ -199,8 +199,8 @@ class AppTest {
             s.close();
         }
 
-        App.FactsHandler handler = new App.FactsHandler();
-        List<CatFact> results = handler.getAllFacts(url);
+        FactDatabase database = new FactDatabase(url);
+        List<CatFact> results = database.getAllFacts();
 
         assertEquals(2, results.size());
         assertEquals(1, results.get(0).id());
@@ -220,8 +220,8 @@ class AppTest {
             s.executeUpdate("INSERT INTO facts (id, fact) VALUES (2, 'Cats sleep a lot')");
         }
 
-        App.FactsHandler handler = new App.FactsHandler();
-        Optional<CatFact> found = handler.findFactById(url, 2);
+        FactDatabase database = new FactDatabase(url);
+        Optional<CatFact> found = database.findFactById(2);
 
         assertTrue(found.isPresent());
         assertEquals(2, found.get().id());
@@ -245,8 +245,8 @@ class AppTest {
             }
         }
 
-        App.FactsHandler handler = new App.FactsHandler();
-        Optional<CatFact> found = handler.findFactById(url, 99);
+        FactDatabase database = new FactDatabase(url);
+        Optional<CatFact> found = database.findFactById(99);
 
         assertTrue(found.isEmpty());
     }
