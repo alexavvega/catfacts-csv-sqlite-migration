@@ -1,4 +1,3 @@
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
@@ -18,6 +17,12 @@ public class App {
 
     public static void main(String[] args) throws IOException {
         System.out.println("Using SQLite database: " + DB_URL);
+
+        try {
+            Class.forName("org.sqlite.JDBC");
+        } catch (ClassNotFoundException e) {
+            throw new IOException(e);
+        }
 
         FactDatabase database = new FactDatabase(DB_URL);
 
