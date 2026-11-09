@@ -32,9 +32,13 @@ class FactsRouter {
                     return new Response(400, new ErrorBody("\"fact\" is required and cannot be blank"), null);
                 } else {
                     String text = input.fact().trim();
-                    CatFact created = database.createFact(text);
 
-                    return new Response(201, created, "/facts/" + created.id());
+                    if (text.contains("\n") || text.contains("\r")) {
+                        return new Response(400, new ErrorBody("\"fact\" must be a single line"), null);
+                    } else {
+                        CatFact created = database.createFact(text);
+                        return new Response(201, created, "/facts/" + created.id());
+                    }
                 }
 
             } else {
