@@ -14,8 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -54,11 +52,6 @@ public class App {
     }
 
     /** Appends one fact to the end of facts.csv as "id,fact". */
-
-    static final Gson gson = new GsonBuilder()
-            .setPrettyPrinting()
-            .disableHtmlEscaping()   // keep ' and = readable instead of '
-            .create();
 
     public static void main(String[] args) throws IOException {
         System.out.println("Using SQLite database: " + DB_URL);
@@ -133,7 +126,7 @@ public class App {
             String sql = "SELECT id, fact FROM facts ORDER BY id";
             List<CatFact> results = new ArrayList<>();
 
-            try (Connection conn = DriverManager.getConnection(DB_URL)) {
+            try (Connection conn = DriverManager.getConnection(dbUrl)) {
                 try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                     try (ResultSet rs = pstmt.executeQuery()) {
                         while (rs.next()) {
@@ -152,7 +145,7 @@ public class App {
         Optional<CatFact> findFactById(String dbUrl, int id) throws SQLException {
             String sql = "SELECT id, fact FROM facts WHERE id = ?";
 
-            try (Connection conn = DriverManager.getConnection(DB_URL)) {
+            try (Connection conn = DriverManager.getConnection(dbUrl)) {
                 try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
                     pstmt.setInt(1, id);
@@ -178,7 +171,7 @@ public class App {
 
             NewFact input;
             try {
-                input = gson.fromJson(body, NewFact.class);
+                input = Json.gson.fromJson(body, NewFact.class);
             } catch (JsonParseException e) {
                 sendJson(exchange, 400, new ErrorBody("body must be JSON like {\"fact\": \"...\"}"));
                 return;
@@ -217,7 +210,7 @@ public class App {
 
         /** Converts any object to JSON with Gson and sends it with the given status. */
         void sendJson(HttpExchange exchange, int status, Object body) throws IOException {
-            byte[] bytes = gson.toJson(body).getBytes(StandardCharsets.UTF_8);
+            byte[] bytes = Json.gson.toJson(body).getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
             exchange.sendResponseHeaders(status, bytes.length);
 
